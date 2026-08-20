@@ -2,142 +2,135 @@
 <html lang="en">
 <head>
 <meta charset="utf-8" />
-<title>Text-Art Card Arcade</title>
+<title>Text Card Arcade — ASCII Only</title>
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <style>
-  :root {
-    --bg: #0b0b0b;
-    --panel: #111;
-    --accent: #ffd966;
-    --text: #e6e6e6;
-    --mono: "Courier New", monospace;
+  :root{
+    --bg:#071018; --panel:#0b2430; --text:#e6f3f7; --accent:#ffd866; --muted:#9fb6c6;
+    --mono: "Courier New", "Lucida Console", monospace;
   }
-  html,body {height:100%; margin:0; background:var(--bg); color:var(--text); font-family:var(--mono);}
-  #money {position:fixed; left:10px; top:10px; background:#222; padding:10px 12px; border:2px solid #333; border-radius:6px; z-index:50}
-  #money .amt {color:var(--accent); font-weight:bold; font-size:18px;}
-  .board {display:grid; grid-template-columns:1fr 1fr; grid-template-rows:1fr 1fr; gap:12px; padding:60px 12px 12px 12px; height:100vh; box-sizing:border-box;}
-  .game {background:var(--panel); padding:10px; border:2px dashed #333; white-space:pre; overflow:auto; font-size:13px;}
-  .title {color:var(--accent); font-weight:bold; margin-bottom:6px; display:block;}
-  .controls {margin-top:6px; font-size:13px;}
-  button {background:#222; color:var(--text); border:1px solid #444; padding:6px 8px; margin-left:6px; cursor:pointer;}
-  input[type=number] {width:90px; padding:5px; background:#0b0b0b; color:var(--text); border:1px solid #333; }
-  .log {margin-top:8px; font-size:12px; color:#cfcfcf;}
-  .cards {font-family:var(--mono); font-size:14px;}
-  .small {font-size:12px}
-  .ascii {color:#8fd3ff; font-size:13px}
-  .suit {color:#ff6b6b}
-  .row {display:flex; gap:8px; align-items:center; flex-wrap:wrap;}
-  .center {text-align:center;}
-  .pile {display:inline-block; padding:6px 8px; border:1px solid #333; border-radius:4px; background:#080808}
+  html,body{height:100%; margin:0; background:var(--bg); color:var(--text); font-family:var(--mono); overflow:hidden;}
+  #money {position:fixed; left:10px; top:10px; background:#062029; padding:8px 10px; border:1px solid #143a47; border-radius:6px; z-index:40;}
+  #money .amt{color:var(--accent); font-weight:bold; font-size:16px;}
+  #money .label{color:var(--muted); font-size:12px;}
+  .board {position:absolute; inset:0; display:grid; grid-template-columns:1fr 1fr; grid-template-rows:1fr 1fr; gap:8px; padding:52px 8px 8px 8px; box-sizing:border-box;}
+  .game {background:linear-gradient(180deg,#062a36 0%, #083745 100%); border:1px solid #133b43; padding:8px; box-sizing:border-box; font-size:12px; display:flex; flex-direction:column; gap:6px; }
+  .hdr{display:flex; justify-content:space-between; align-items:center;}
+  .title{font-weight:bold; color:var(--accent); font-size:13px;}
+  .sub{color:var(--muted); font-size:11px;}
+  .board-row{display:flex; gap:6px; align-items:center;}
+  .controls{display:flex; gap:6px; align-items:center; flex-wrap:wrap;}
+  button{background:#0b3a44; color:var(--text); border:1px solid #1a6674; padding:5px 8px; cursor:pointer; font-family:var(--mono); font-size:12px; border-radius:4px;}
+  input[type=number], input[type=text]{background:#052022; color:var(--text); border:1px solid #154a53; padding:4px 6px; font-family:var(--mono); font-size:12px; border-radius:4px;}
+  .area{flex:1; background:#04181d; border:1px dashed #08323a; padding:6px; overflow:auto; white-space:pre; font-family:var(--mono); font-size:12px;}
+  .small{font-size:11px; color:var(--muted);}
+  .card {display:inline-block; vertical-align:top; margin:2px; font-family:var(--mono); line-height:10px;}
+  .status{color:var(--muted); font-size:12px;}
+  .stat-ok{color:#7fe08a}
+  .stat-bad{color:#ff8b8b}
+  /* make sure each quadrant fits: reduce font at very small widths */
+  @media (max-height:700px) { .game{font-size:11px} .area{font-size:11px} }
+  @media (max-height:560px) { .game{font-size:10px} .area{font-size:10px} }
 </style>
 </head>
 <body>
-<div id="money">Money: $<span class="amt" id="moneyVal">1000</span></div>
+<div id="money"><div class="label">Money</div>$<span class="amt" id="moneyVal">1000</span></div>
 
 <div class="board">
+  <!-- BLACKJACK -->
   <div class="game" id="blackjack">
-    <div class="title">BLACKJACK</div>
-    <div class="ascii">
-      _______   _   _   _   _ 
-     |   _   |_| |_| |_| |_| |
-     |  |_)  |  _| | | |_  _|
-     |  | \  | |_| |_| |_|_|  
-      - text chips & cards -
+    <div class="hdr">
+      <div>
+        <div class="title">BLACKJACK</div>
+        <div class="sub">Hit / Stand / Double Down — dealer stands on soft 17</div>
+      </div>
+      <div class="small">Bet locked when deal</div>
     </div>
-    <div class="cards" id="bj-area"></div>
+    <div class="area" id="bj-area"></div>
     <div class="controls">
-      Bet: $<input type="number" id="bj-bet" min="1" value="10">
-      <button id="bj-bet-btn">Place Bet / Deal</button>
+      $<input id="bj-bet" type="number" min="1" value="25" style="width:70px">
+      <button id="bj-deal">Deal / New Round</button>
       <button id="bj-hit" disabled>Hit</button>
       <button id="bj-stand" disabled>Stand</button>
-      <span class="small" id="bj-status"></span>
+      <button id="bj-double" disabled>Double Down</button>
+      <div class="status" id="bj-msg"></div>
     </div>
-    <div class="log" id="bj-log"></div>
   </div>
 
-  <div class="game" id="solitaire">
-    <div class="title">SOLITAIRE (Simple)</div>
-    <div class="ascii">
-       _________
-      /  _  _  /|
-     /__/__/__/_|
-     |  _  _  |/
-     |_/ \/ \_|
-      - flip & remove if +/-1 -
+  <!-- PYRAMID SOLITAIRE -->
+  <div class="game" id="pyramid">
+    <div class="hdr">
+      <div>
+        <div class="title">PYRAMID SOLITAIRE</div>
+        <div class="sub">Remove exposed pairs summing to 13. K removes alone. Stock -> Waste -> Draw / Reset</div>
+      </div>
+      <div class="small">More tactical than the simple version</div>
     </div>
-    <div class="cards" id="sol-area"></div>
+    <div class="area" id="py-area"></div>
     <div class="controls">
-      Bet: $<input type="number" id="sol-bet" min="1" value="10">
-      <button id="sol-bet-btn">Place Bet / Start</button>
-      <button id="sol-flip" disabled>Flip</button>
-      <button id="sol-remove" disabled>Remove (if +/-1)</button>
-      <span class="small" id="sol-status"></span>
+      $<input id="py-bet" type="number" min="1" value="20" style="width:70px">
+      <button id="py-start">Start / Deal</button>
+      <button id="py-draw" disabled>Draw</button>
+      <button id="py-reset" disabled>Reset Stock</button>
+      <button id="py-remove" disabled>Remove Selected</button>
+      <div class="status" id="py-msg"></div>
     </div>
-    <div class="log" id="sol-log"></div>
   </div>
 
+  <!-- GO FISH -->
   <div class="game" id="gofish">
-    <div class="title">GO FISH</div>
-    <div class="ascii">
-       ______
-      /_____/|
-      |  o  ||
-      |_____|/
-     - ask for rank, try to make pairs -
+    <div class="hdr">
+      <div>
+        <div class="title">GO FISH (full round)</div>
+        <div class="sub">Play until deck and hands exhaust. CPU is a simple strategic player.</div>
+      </div>
+      <div class="small">Ask by rank; CPU turn follows.</div>
     </div>
-    <div class="cards" id="gf-area"></div>
+    <div class="area" id="gf-area"></div>
     <div class="controls">
-      Bet: $<input type="number" id="gf-bet" min="1" value="10">
-      <button id="gf-bet-btn">Place Bet / Deal</button>
-      Ask Rank: <input id="gf-ask" placeholder="A,2..K" style="width:60px">
+      $<input id="gf-bet" type="number" min="1" value="15" style="width:70px">
+      <button id="gf-start">Deal / Start</button>
+      <input id="gf-ask" type="text" placeholder="A,2..K" style="width:52px">
       <button id="gf-ask-btn" disabled>Ask</button>
-      <span class="small" id="gf-status"></span>
+      <div class="status" id="gf-msg"></div>
     </div>
-    <div class="log" id="gf-log"></div>
   </div>
 
+  <!-- HIGHER OR LOWER -->
   <div class="game" id="hilow">
-    <div class="title">HIGHER or LOWER</div>
-    <div class="ascii">
-      .------.
-      |A .   |
-      | /.\  |
-      |(_,_) |
-      '------'
-      - guess if next is higher or lower -
+    <div class="hdr">
+      <div>
+        <div class="title">HIGHER or LOWER</div>
+        <div class="sub">Streak multiplier grows with correct guesses. Cash Out to bank multiplier.</div>
+      </div>
+      <div class="small">Tie = lose</div>
     </div>
-    <div class="cards" id="hl-area"></div>
+    <div class="area" id="hl-area"></div>
     <div class="controls">
-      Bet: $<input type="number" id="hl-bet" min="1" value="10">
-      <button id="hl-bet-btn">Place Bet / Start</button>
+      $<input id="hl-bet" type="number" min="1" value="10" style="width:70px">
+      <button id="hl-start">Start</button>
       <button id="hl-higher" disabled>Higher</button>
       <button id="hl-lower" disabled>Lower</button>
-      <span class="small" id="hl-status"></span>
+      <button id="hl-cash" disabled>Cash Out</button>
+      <div class="status" id="hl-msg"></div>
     </div>
-    <div class="log" id="hl-log"></div>
   </div>
 </div>
 
 <script>
-// Shared money tracker
-let money = 1000;
-function setMoney(v) { money = Math.max(0, Math.floor(v)); document.getElementById('moneyVal').textContent = money; }
-setMoney(money);
-
-// Deck helpers
+// Helper / shared
 const SUITS = ['♠','♥','♦','♣'];
 const RANKS = ['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
-
-function newDeck(times=1) {
-  const d = [];
+function newDeck(times=1){
+  const deck=[];
   for (let t=0;t<times;t++){
     for (let s=0;s<SUITS.length;s++){
       for (let r=0;r<RANKS.length;r++){
-        d.push({rank:RANKS[r],suit:SUITS[s],value:r+1});
+        deck.push({rank:RANKS[r],suit:SUITS[s],v:r+1});
       }
     }
   }
-  return shuffle(d);
+  return shuffle(deck);
 }
 function shuffle(a){
   for (let i=a.length-1;i>0;i--){
@@ -146,334 +139,527 @@ function shuffle(a){
   }
   return a;
 }
-function cardToStr(c){ return c.rank + c.suit; }
-function valueForBlackjack(card){
-  if (!card) return 0;
-  if (card.rank==='A') return 11;
-  if (['J','Q','K'].includes(card.rank)) return 10;
-  return parseInt(card.rank,10);
+function cardStr(c){
+  if (!c) return '   ';
+  return c.rank + c.suit;
 }
+function asciiCard(c){
+  // 5-line compact ascii card
+  if (!c) return ['┌───┐','│   │','│   │','│   │','└───┘'];
+  const r = c.rank.length===2? c.rank : c.rank + ' ';
+  const left = r;
+  const right = (r.length===2? r : ' ' + r.trim());
+  const mid = ' ' + c.suit + ' ';
+  return [
+    '┌───┐',
+    '│' + left + ' │',
+    '│ ' + mid + '│',
+    '│ ' + right + '│',
+    '└───┘'
+  ];
+}
+function renderCardsInline(cards){
+  // cards: array of card objects or null placeholders
+  const lines = ['','','','',''];
+  for (const c of cards){
+    const art = asciiCard(c);
+    for (let i=0;i<5;i++){
+      lines[i] += art[i] + ' ';
+    }
+  }
+  return lines.join('\n');
+}
+function moneySet(v){ money = Math.max(0, Math.floor(v)); document.getElementById('moneyVal').textContent = money; }
+let money = 1000;
+moneySet(money);
 
-// ---------------- BLACKJACK ----------------
-const BJ = {
-  deck: newDeck(2),
-  player: [],
-  dealer: [],
-  bet:0,
-  inRound:false
-};
+// ---------------- BLACKJACK (with Double Down) ----------------
+const BJ = { deck:newDeck(2), player:[], dealer:[], bet:0, inRound:false, doubled:false };
 const bjArea = document.getElementById('bj-area');
-const bjLog = document.getElementById('bj-log');
-function bjRender(){
-  bjArea.textContent = "Dealer: " + BJ.dealer.map(cardToStr).join(' ')
-    + "\nPlayer: " + BJ.player.map(cardToStr).join(' ')
-    + "\n\n(Dealer shows first card hidden if round ongoing)";
-}
-function bjLogMsg(m){ bjLog.textContent = m; document.getElementById('bj-status').textContent = ''; }
-function bjStartRound(){
-  const betInput = Number(document.getElementById('bj-bet').value)||0;
-  if (betInput<=0){ bjLogMsg('Enter a positive bet'); return; }
-  if (betInput>money){ bjLogMsg('Not enough money'); return; }
-  // take bet
-  setMoney(money - betInput);
-  BJ.bet = betInput;
-  BJ.inRound = true;
-  BJ.player = [];
-  BJ.dealer = [];
-  if (BJ.deck.length < 15) BJ.deck = newDeck(2);
-  BJ.player.push(BJ.deck.pop(), BJ.deck.pop());
-  BJ.dealer.push(BJ.deck.pop(), BJ.deck.pop());
-  document.getElementById('bj-hit').disabled = false;
-  document.getElementById('bj-stand').disabled = false;
-  bjRender();
-  bjLogMsg('Round started. Hit or Stand.');
+const bjMsg = document.getElementById('bj-msg');
+
+function bjRender(showDealerAll=false){
+  // show dealer's first card hidden if round ongoing and not showing all
+  const dealerDisplay = [];
+  if (!BJ.inRound && BJ.dealer.length){
+    dealerDisplay.push(...BJ.dealer);
+  } else if (BJ.inRound){
+    dealerDisplay.push({rank:'??',suit:' '}); // hide first
+    for (let i=1;i<BJ.dealer.length;i++) dealerDisplay.push(BJ.dealer[i]);
+  }
+  const pLines = renderCardsInline(BJ.player);
+  const dLines = renderCardsInline(dealerDisplay);
+  const pSum = bjSum(BJ.player);
+  const dSum = (BJ.inRound ? '??' : bjSum(BJ.dealer));
+  let status = `Player (${pSum})   Dealer (${dSum})\n`;
+  bjArea.textContent = dLines + '\n\n' + pLines + '\n\n' + status;
 }
 function bjSum(hand){
-  let sum = 0, aces=0;
-  for (const c of hand){ if (!c) continue; if (c.rank==='A'){ aces++; sum+=11 } else if (['J','Q','K'].includes(c.rank)) sum+=10; else sum+=Number(c.rank); }
+  let sum=0, aces=0;
+  for (const c of hand){
+    if (!c || c.rank==='??') continue;
+    if (c.rank==='A'){ aces++; sum+=11; }
+    else if (['J','Q','K'].includes(c.rank)) sum+=10;
+    else sum+=Number(c.rank);
+  }
   while(sum>21 && aces>0){ sum-=10; aces--; }
   return sum;
+}
+function bjDeal(){
+  const bet = Math.max(0, Math.floor(Number(document.getElementById('bj-bet').value)||0));
+  if (bet<=0){ bjMsg.textContent='Enter a positive bet'; return; }
+  if (bet>money){ bjMsg.textContent='Not enough money'; return; }
+  // take bet
+  moneySet(money - bet);
+  BJ.bet = bet; BJ.doubled=false;
+  if (BJ.deck.length < 20) BJ.deck = newDeck(2);
+  BJ.player = [BJ.deck.pop(), BJ.deck.pop()];
+  BJ.dealer = [BJ.deck.pop(), BJ.deck.pop()];
+  BJ.inRound = true;
+  document.getElementById('bj-hit').disabled = false;
+  document.getElementById('bj-stand').disabled = false;
+  document.getElementById('bj-double').disabled = false;
+  bjRender();
+  bjMsg.textContent = 'Round started — your move.';
+  // auto blackjack check
+  const pSum = bjSum(BJ.player);
+  const dSum = bjSum(BJ.dealer);
+  if (pSum===21){
+    // immediate resolution: player blackjack (pays 3:2)
+    BJ.inRound=false;
+    document.getElementById('bj-hit').disabled=true;
+    document.getElementById('bj-stand').disabled=true;
+    document.getElementById('bj-double').disabled=true;
+    const payout = Math.floor(BJ.bet * 2.5);
+    moneySet(money + payout);
+    bjRender();
+    bjMsg.textContent = `Blackjack! You win $${payout - BJ.bet} (paid ${payout}).`;
+    BJ.bet = 0;
+  }
 }
 function bjHit(){
   if (!BJ.inRound) return;
   BJ.player.push(BJ.deck.pop());
-  bjRender();
   const s = bjSum(BJ.player);
-  if (s>21){ // bust
+  if (s>21){
     BJ.inRound=false;
     document.getElementById('bj-hit').disabled=true;
     document.getElementById('bj-stand').disabled=true;
-    bjLogMsg('You busted! Lost $' + BJ.bet);
+    document.getElementById('bj-double').disabled=true;
+    bjRender();
+    bjMsg.textContent = `Busted (${s}). You lost $${BJ.doubled? BJ.bet*2 : BJ.bet}.`;
     BJ.bet = 0;
   } else {
-    bjLogMsg('You have ' + s);
+    bjRender();
+    bjMsg.textContent = `You have ${s}.`;
   }
 }
 function bjStand(){
   if (!BJ.inRound) return;
-  // dealer draws to 17
-  while (bjSum(BJ.dealer) < 17) BJ.dealer.push(BJ.deck.pop());
+  // dealer plays up to 17 (soft 17 -> stand)
+  while(bjSum(BJ.dealer) < 17){ BJ.dealer.push(BJ.deck.pop()); }
   const p = bjSum(BJ.player), d = bjSum(BJ.dealer);
-  let result = '';
-  if (p>21) { result = 'lose'; }
-  else if (d>21 || p> d) { result = 'win'; }
-  else if (p===d) { result = 'push'; }
-  else result = 'lose';
-  let message='';
-  if (result==='win'){ setMoney(money + BJ.bet*2); message = `You win! +$${BJ.bet}`; }
-  else if (result==='push'){ setMoney(money + BJ.bet); message = `Push. Bet returned $${BJ.bet}`; }
-  else { message = `You lose $${BJ.bet}`; }
+  let result;
+  if (p>21) result='lose';
+  else if (d>21 || p> d) result='win';
+  else if (p===d) result='push';
+  else result='lose';
+  if (result==='win'){
+    const pay = BJ.doubled ? BJ.bet*4 : BJ.bet*2;
+    moneySet(money + pay);
+    bjMsg.textContent = `You win! +$${pay - (BJ.doubled? BJ.bet*2 : BJ.bet)} (P:${p} D:${d})`;
+  } else if (result==='push'){
+    const ret = BJ.doubled ? BJ.bet*2 : BJ.bet;
+    moneySet(money + ret);
+    bjMsg.textContent = `Push. Bet returned $${ret} (P:${p} D:${d})`;
+  } else {
+    bjMsg.textContent = `You lose $${BJ.doubled? BJ.bet*2 : BJ.bet} (P:${p} D:${d})`;
+  }
   BJ.inRound=false;
   document.getElementById('bj-hit').disabled=true;
   document.getElementById('bj-stand').disabled=true;
+  document.getElementById('bj-double').disabled=true;
   bjRender();
-  bjLogMsg(message + " (P:"+p+" D:"+d+")");
-  BJ.bet=0;
+  BJ.bet = 0;
 }
-document.getElementById('bj-bet-btn').onclick = bjStartRound;
-document.getElementById('bj-hit').onclick = bjHit;
-document.getElementById('bj-stand').onclick = bjStand;
-
-// ---------------- SIMPLE SOLITAIRE ----------------
-const SOL = {
-  deck: newDeck(1),
-  pile: [], // face-up pile stack
-  waste: [], // held face-up stack top
-  bet:0,
-  inRound:false
-};
-const solArea = document.getElementById('sol-area');
-const solLog = document.getElementById('sol-log');
-function solRender(){
-  solArea.textContent = "Deck: [" + SOL.deck.length + "]\nPile(top): " + (SOL.pile.length?cardToStr(SOL.pile[SOL.pile.length-1]):'--')
-    + "\nWaste: " + SOL.waste.map(cardToStr).join(' ');
-}
-function solLogMsg(m){ solLog.textContent = m; document.getElementById('sol-status').textContent = ''; }
-function solStart(){
-  const betInput = Number(document.getElementById('sol-bet').value)||0;
-  if (betInput<=0){ solLogMsg('Enter a positive bet'); return; }
-  if (betInput>money){ solLogMsg('Not enough money'); return; }
-  setMoney(money - betInput);
-  SOL.bet = betInput;
-  SOL.deck = newDeck(1);
-  SOL.pile = [];
-  SOL.waste = [];
-  // initial 5 in pile face-up
-  for (let i=0;i<5;i++) SOL.pile.push(SOL.deck.pop());
-  SOL.inRound = true;
-  document.getElementById('sol-flip').disabled=false;
-  document.getElementById('sol-remove').disabled=false;
-  solRender();
-  solLogMsg('Start: flip or remove if +/-1 from pile top.');
-}
-function solFlip(){
-  if (!SOL.inRound) return;
-  if (SOL.deck.length===0){ solLogMsg('No cards left to flip'); return; }
-  SOL.waste.push(SOL.deck.pop());
-  solRender();
-  solLogMsg('Flipped one. Try removing if +/-1 rank from pile top.');
-}
-function rankIndex(rank){ return RANKS.indexOf(rank); }
-function solRemove(){
-  if (!SOL.inRound) return;
-  if (SOL.waste.length===0 || SOL.pile.length===0){ solLogMsg('No removable combo'); return; }
-  const topPile = SOL.pile[SOL.pile.length-1];
-  const topWaste = SOL.waste[SOL.waste.length-1];
-  const pi = rankIndex(topPile.rank), wi = rankIndex(topWaste.rank);
-  if (Math.abs(pi - wi) === 1){
-    SOL.pile.pop();
-    SOL.waste.pop();
-    solRender();
-    solLogMsg('Removed pair. If pile empty you win.');
-    if (SOL.pile.length===0){
-      // win
-      setMoney(money + SOL.bet*3); // payout
-      SOL.inRound=false;
-      document.getElementById('sol-flip').disabled=true;
-      document.getElementById('sol-remove').disabled=true;
-      solLogMsg('You cleared the pile! You win $' + SOL.bet*2 + ' (wager returned + payout)');
-      SOL.bet=0;
-    }
+function bjDouble(){
+  if (!BJ.inRound) return;
+  // double bet: take additional amount if available
+  const extra = Math.min(money, BJ.bet);
+  if (extra < BJ.bet){
+    bjMsg.textContent = 'Not enough money to double fully; doubling by available amount.';
+  }
+  moneySet(money - BJ.bet); // take equal amount (we assume full)
+  BJ.doubled = true;
+  // give one card then stand
+  BJ.player.push(BJ.deck.pop());
+  bjRender();
+  const s = bjSum(BJ.player);
+  if (s>21){
+    BJ.inRound=false;
+    document.getElementById('bj-hit').disabled=true;
+    document.getElementById('bj-stand').disabled=true;
+    document.getElementById('bj-double').disabled=true;
+    bjMsg.textContent = `Busted after double (${s}). Lost doubled bet.`;
+    BJ.bet = 0;
   } else {
-    solLogMsg('Top ranks not +/-1');
+    bjStand();
   }
 }
-document.getElementById('sol-bet-btn').onclick = solStart;
-document.getElementById('sol-flip').onclick = solFlip;
-document.getElementById('sol-remove').onclick = solRemove;
+document.getElementById('bj-deal').onclick = bjDeal;
+document.getElementById('bj-hit').onclick = bjHit;
+document.getElementById('bj-stand').onclick = bjStand;
+document.getElementById('bj-double').onclick = bjDouble;
+bjRender();
 
-// ---------------- GO FISH (very simple) ----------------
-const GF = {
-  deck: newDeck(1),
-  player: [],
-  cpu: [],
-  bet:0,
-  inRound:false
-};
-const gfArea = document.getElementById('gf-area');
-const gfLog = document.getElementById('gf-log');
-function gfRender(){
-  gfArea.textContent = "Your hand: " + GF.player.map(cardToStr).join(' ')
-    + "\nCPU books: " + GF.cpuBooks
-    + "\nYour books: " + GF.playerBooks;
+// ---------------- PYRAMID SOLITAIRE ----------------
+const PY = { deck:[], pyramid:[], exposed:[], stock:[], waste:[], selected:[], bet:0, inRound:false };
+const pyArea = document.getElementById('py-area');
+const pyMsg = document.getElementById('py-msg');
+
+function pyStart(){
+  const bet = Math.max(0, Math.floor(Number(document.getElementById('py-bet').value)||0));
+  if (bet<=0){ pyMsg.textContent='Enter a positive bet'; return; }
+  if (bet>money){ pyMsg.textContent='Not enough money'; return; }
+  moneySet(money - bet);
+  PY.bet = bet;
+  PY.deck = newDeck(1);
+  PY.pyramid = []; PY.exposed = []; PY.selected = [];
+  // build pyramid 1..7 rows: total 28
+  for (let row=0;row<7;row++){
+    const r = [];
+    for (let i=0;i<=row;i++) r.push(PY.deck.pop());
+    PY.pyramid.push(r);
+  }
+  // stock is remaining deck
+  PY.stock = PY.deck.slice();
+  PY.deck = [];
+  PY.waste = [];
+  PY.inRound = true;
+  document.getElementById('py-draw').disabled=false;
+  document.getElementById('py-reset').disabled=false;
+  document.getElementById('py-remove').disabled=false;
+  pyUpdateExposed();
+  pyRender();
+  pyMsg.textContent = 'Pyramid dealt. Remove exposed pairs that sum to 13 (K=13 alone). Click ranks text to select.';
 }
-function gfLogMsg(m){ gfLog.textContent = m; document.getElementById('gf-status').textContent = ''; }
+function pyUpdateExposed(){
+  // exposed positions are those without cards sitting on them
+  PY.exposed = [];
+  for (let r=0;r<7;r++){
+    for (let c=0;c<=r;c++){
+      // a card is blocked if there are cards at [r+1][c] or [r+1][c+1]
+      let blocked = false;
+      if (r < 6){
+        if (PY.pyramid[r+1][c]) blocked = true;
+        if (PY.pyramid[r+1][c+1]) blocked = true;
+      }
+      if (!blocked && PY.pyramid[r][c]) PY.exposed.push({row:r,col:c,card:PY.pyramid[r][c]});
+    }
+  }
+}
+function pyRender(){
+  // render pyramid rows
+  const rows = [];
+  for (let r=0;r<7;r++){
+    const lineCards = [];
+    for (let c=0;c<=r;c++){
+      lineCards.push(PY.pyramid[r][c] || null);
+    }
+    // center spacing
+    const prepad = ' '.repeat((6-r)*6);
+    let block = renderCardsInline(lineCards).split('\n').map(l=>prepad + l).join('\n');
+    rows.push(block);
+  }
+  const stockLine = 'Stock:[' + (PY.stock.length) + '] Waste:[' + (PY.waste.length ? PY.waste.map(cardStr).join(' ') : '--') + ']';
+  const sel = PY.selected.map(s=>cardStr(s.card)).join(' ');
+  pyArea.textContent = rows.join('\n') + '\n\n' + stockLine + '\nSelected: ' + sel + '\n\n(Click column text below to select exposed card)';
+}
+function pySelect(row,col){
+  if (!PY.inRound) return;
+  const found = PY.exposed.find(e=>e.row===row && e.col===col);
+  if (!found) { pyMsg.textContent='Not exposed'; return; }
+  // toggle selection
+  const idx = PY.selected.findIndex(s=>s.row===row && s.col===col);
+  if (idx>=0) PY.selected.splice(idx,1);
+  else PY.selected.push(found);
+  pyRender();
+  pyMsg.textContent = 'Selected: ' + PY.selected.map(s=>cardStr(s.card)).join(' ');
+}
+function pyRemoveSelected(){
+  if (!PY.inRound) return;
+  if (PY.selected.length===0){ pyMsg.textContent='Select one (K) or two cards'; return; }
+  if (PY.selected.length===1){
+    const v = PY.selected[0].card.v;
+    if (v===13){
+      // remove
+      const s = PY.selected[0];
+      PY.pyramid[s.row][s.col] = null;
+      PY.selected=[];
+      pyUpdateExposed();
+      pyRender();
+      checkPyWin();
+      pyMsg.textContent = 'Removed King';
+      return;
+    } else { pyMsg.textContent='Single card must be King (13)'; return; }
+  }
+  if (PY.selected.length===2){
+    const a = PY.selected[0].card.v;
+    const b = PY.selected[1].card.v;
+    if (a + b === 13){
+      // remove both
+      for (const s of PY.selected) PY.pyramid[s.row][s.col] = null;
+      PY.selected=[];
+      pyUpdateExposed();
+      pyRender();
+      checkPyWin();
+      pyMsg.textContent = 'Removed pair summing to 13';
+    } else pyMsg.textContent = 'Selected do not sum to 13';
+  }
+}
+function pyDraw(){
+  if (!PY.inRound) return;
+  if (PY.stock.length>0) PY.waste.push(PY.stock.pop());
+  else pyMsg.textContent = 'Stock empty — use Reset to recycle waste';
+  pyRender();
+}
+function pyReset(){
+  if (!PY.inRound) return;
+  // move waste back to stock reversed
+  PY.stock = PY.waste.reverse().concat(PY.stock);
+  PY.waste = [];
+  pyRender();
+  pyMsg.textContent = 'Stock reset';
+}
+function checkPyWin(){
+  // win if all pyramid spots null
+  let any=false;
+  for (const row of PY.pyramid) for (const c of row) if (c) any=true;
+  if (!any){
+    PY.inRound=false;
+    document.getElementById('py-draw').disabled=true;
+    document.getElementById('py-reset').disabled=true;
+    document.getElementById('py-remove').disabled=true;
+    const payout = PY.bet * 4;
+    moneySet(money + payout);
+    pyMsg.textContent = `You cleared the pyramid! Payout $${payout}.`;
+  }
+}
+document.getElementById('py-start').onclick = pyStart;
+document.getElementById('py-draw').onclick = pyDraw;
+document.getElementById('py-reset').onclick = pyReset;
+document.getElementById('py-remove').onclick = pyRemoveSelected;
+
+// Enable clicking on exposed card text inside the area by mapping positions: (we'll use row,col coordinates rendered in a hidden mapping)
+pyArea.addEventListener('click', (e)=>{
+  // find clicked word near mouse: we will compute row from y coordinate
+  if (!PY.inRound) return;
+  const rect = pyArea.getBoundingClientRect();
+  const y = e.clientY - rect.top;
+  const h = rect.height;
+  // approximate row by dividing top area: each pyramid row block roughly 5*lineHeight px; compute row index:
+  const lineH = Math.max(12, parseInt(window.getComputedStyle(pyArea).fontSize || 12));
+  const approxLine = Math.floor(y / (lineH*1.3));
+  // map approxLine to pyramid row 0..6: top area started at 0 in our rendering; we take the closest row
+  let row = Math.min(6, Math.max(0, Math.floor(approxLine / 6))); // heuristic
+  // find nearest exposed at that row
+  const exposeds = PY.exposed.filter(e=>e.row===row);
+  if (exposeds.length>0){
+    // pick first (simple)
+    pySelect(exposeds[0].row, exposeds[0].col);
+  }
+});
+
+// ---------------- GO FISH (full) ----------------
+const GF = { deck:[], player:[], cpu:[], playerBooks:0, cpuBooks:0, bet:0, inRound:false };
+const gfArea = document.getElementById('gf-area');
+const gfMsg = document.getElementById('gf-msg');
+
 function gfStart(){
-  const betInput = Number(document.getElementById('gf-bet').value)||0;
-  if (betInput<=0){ gfLogMsg('Enter a positive bet'); return; }
-  if (betInput>money){ gfLogMsg('Not enough money'); return; }
-  setMoney(money - betInput);
-  GF.bet = betInput;
+  const bet = Math.max(0, Math.floor(Number(document.getElementById('gf-bet').value)||0));
+  if (bet<=0){ gfMsg.textContent='Enter a positive bet'; return; }
+  if (bet>money){ gfMsg.textContent='Not enough money'; return; }
+  moneySet(money - bet);
+  GF.bet = bet;
   GF.deck = newDeck(1);
-  GF.player = [];
-  GF.cpu = [];
-  GF.playerBooks = 0;
-  GF.cpuBooks = 0;
-  // deal 5 each
-  for (let i=0;i<5;i++){ GF.player.push(GF.deck.pop()); GF.cpu.push(GF.deck.pop()); }
+  GF.player = []; GF.cpu = []; GF.playerBooks=0; GF.cpuBooks=0;
+  for (let i=0;i<7;i++){ GF.player.push(GF.deck.pop()); GF.cpu.push(GF.deck.pop()); }
   GF.inRound = true;
   document.getElementById('gf-ask-btn').disabled=false;
   gfRender();
-  gfLogMsg('Dealt. Ask for a rank (A,2..K) to request from CPU.');
+  gfMsg.textContent = 'Dealt. Ask a rank you have.';
 }
-function findAndMove(rank, from, to){
-  let moved = false;
-  for (let i = from.length-1; i>=0;i--){
-    if (from[i].rank === rank){ to.push(from.splice(i,1)[0]); moved = true; }
-  }
-  return moved;
+function gfRender(){
+  const ph = GF.player.map(cardStr).join(' ');
+  const ch = GF.cpu.length + ' cards';
+  const deckCount = GF.deck.length;
+  gfArea.textContent = `Your hand (${GF.player.length}): ${ph}\nCPU: ${ch}\nDeck: ${deckCount}  |  Your books: ${GF.playerBooks}  CPU books: ${GF.cpuBooks}`;
 }
-function countRank(hand, rank){
-  return hand.filter(c=>c.rank===rank).length;
-}
-function checkBooksForPlayer(){
-  // if player has 4 of a rank, make a book
+function gfCheckBooks(hand, who){
   for (const r of RANKS){
-    if (countRank(GF.player, r) >= 4){
-      GF.player = GF.player.filter(c=>c.rank!==r);
-      GF.playerBooks++;
-    }
-    if (countRank(GF.cpu, r) >= 4){
-      GF.cpu = GF.cpu.filter(c=>c.rank!==r);
-      GF.cpuBooks++;
+    const cnt = hand.filter(c=>c.rank===r).length;
+    if (cnt >= 4){
+      // remove them
+      for (let i=hand.length-1;i>=0;i--) if (hand[i].rank===r) hand.splice(i,1);
+      if (who==='player') GF.playerBooks++;
+      else GF.cpuBooks++;
     }
   }
 }
 function gfAsk(){
   if (!GF.inRound) return;
   const rank = (document.getElementById('gf-ask').value||'').trim().toUpperCase();
-  if (!RANKS.includes(rank)){ gfLogMsg('Enter a valid rank'); return; }
+  if (!RANKS.includes(rank)){ gfMsg.textContent='Enter valid rank'; return; }
+  if (!GF.player.some(c=>c.rank===rank)){ gfMsg.textContent='You must have that rank'; return; }
   // ask CPU for rank
-  const had = findAndMove(rank, GF.cpu, GF.player);
-  if (had){
-    checkBooksForPlayer();
-    gfRender();
-    gfLogMsg('CPU had some. You got them. Ask again or check books.');
-    // player may continue
-  } else {
-    // go fish: draw one
-    if (GF.deck.length>0){
-      const drawn = GF.deck.pop();
-      GF.player.push(drawn);
-      checkBooksForPlayer();
-      gfRender();
-      gfLogMsg('Go Fish! Drew ' + cardToStr(drawn) + '. Now CPU turn.');
-    } else {
-      gfLogMsg('Go Fish deck empty. CPU turn.');
-    }
-    // CPU simple random ask
-    const cpuAsk = GF.player.length? GF.player[Math.floor(Math.random()*GF.player.length)].rank : RANKS[Math.floor(Math.random()*RANKS.length)];
-    // CPU asks player:
-    const cpuHad = findAndMove(cpuAsk, GF.player, GF.cpu);
-    if (!cpuHad){
-      if (GF.deck.length>0) GF.cpu.push(GF.deck.pop());
-    }
-    checkBooksForPlayer();
-    gfRender();
-    // Check end
-    if (GF.deck.length===0 && GF.player.length===0 && GF.cpu.length===0){
-      GF.inRound=false;
-      document.getElementById('gf-ask-btn').disabled=true;
-      // decide
-      if (GF.playerBooks > GF.cpuBooks){ setMoney(money + GF.bet*3); gfLogMsg('You win Go Fish! Pairs:'+GF.playerBooks+' vs '+GF.cpuBooks+' Payout: $' + (GF.bet*2)); }
-      else if (GF.playerBooks === GF.cpuBooks){ setMoney(money + GF.bet); gfLogMsg('Push in Go Fish. Bet returned.'); }
-      else { gfLogMsg('CPU wins Go Fish. You lost $' + GF.bet); }
-      GF.bet=0;
-    } else {
-      gfLogMsg('CPU asked ' + cpuAsk + '. Round continues.');
+  let transferred = 0;
+  for (let i=GF.cpu.length-1;i>=0;i--){
+    if (GF.cpu[i].rank === rank){
+      GF.player.push(GF.cpu.splice(i,1)[0]);
+      transferred++;
     }
   }
+  if (transferred>0){
+    gfCheckBooks(GF.player,'player');
+    gfRender();
+    gfMsg.textContent = `CPU gave you ${transferred} card(s). You may ask again.`;
+    checkGFEnd();
+    return;
+  }
+  // go fish: draw one
+  if (GF.deck.length>0){
+    GF.player.push(GF.deck.pop());
+    gfCheckBooks(GF.player,'player');
+    gfRender();
+    gfMsg.textContent = `Go Fish — you drew ${cardStr(GF.player[GF.player.length-1])}. Now CPU's turn.`;
+  } else {
+    gfMsg.textContent = 'Deck empty. CPU turn.';
+  }
+  // CPU's simple turn: prefer ranks it has, ask one
+  cpuTurn();
+  checkGFEnd();
 }
-document.getElementById('gf-bet-btn').onclick = gfStart;
+function cpuTurn(){
+  if (!GF.inRound) return;
+  // choose rank: prefer one it has most of
+  const rankCounts = {};
+  for (const c of GF.cpu) rankCounts[c.rank] = (rankCounts[c.rank]||0) + 1;
+  let askRank = null;
+  let best = 0;
+  for (const r in rankCounts) if (rankCounts[r] > best){ best = rankCounts[r]; askRank=r; }
+  if (!askRank) askRank = RANKS[Math.floor(Math.random()*RANKS.length)];
+  let got = 0;
+  for (let i=GF.player.length-1;i>=0;i--){
+    if (GF.player[i].rank === askRank){ GF.cpu.push(GF.player.splice(i,1)[0]); got++; }
+  }
+  if (got>0){
+    gfCheckBooks(GF.cpu,'cpu');
+    gfRender();
+    gfMsg.textContent += ` CPU asked ${askRank} and got ${got}. CPU may ask again.`;
+  } else {
+    if (GF.deck.length>0) GF.cpu.push(GF.deck.pop());
+    gfCheckBooks(GF.cpu,'cpu');
+    gfRender();
+    gfMsg.textContent += ` CPU drew a card.`;
+  }
+}
+function checkGFEnd(){
+  if (GF.deck.length===0 && GF.player.length===0 && GF.cpu.length===0){
+    GF.inRound=false;
+    document.getElementById('gf-ask-btn').disabled=true;
+    // decide winner
+    if (GF.playerBooks > GF.cpuBooks){
+      const payout = GF.bet * 3;
+      moneySet(money + payout);
+      gfMsg.textContent = `You win Go Fish! Books ${GF.playerBooks} vs ${GF.cpuBooks}. Payout $${payout}.`;
+    } else if (GF.playerBooks === GF.cpuBooks){
+      moneySet(money + GF.bet);
+      gfMsg.textContent = `Push in Go Fish. Bet returned. Books ${GF.playerBooks} vs ${GF.cpuBooks}.`;
+    } else gfMsg.textContent = `CPU wins Go Fish. You lost $${GF.bet}. Books ${GF.playerBooks} vs ${GF.cpuBooks}.`;
+    GF.bet = 0;
+  }
+}
+document.getElementById('gf-start').onclick = gfStart;
 document.getElementById('gf-ask-btn').onclick = gfAsk;
 
-// ---------------- HIGHER or LOWER ----------------
-const HL = {
-  deck: newDeck(1),
-  current: null,
-  bet:0,
-  inRound:false
-};
+// ---------------- HIGHER or LOWER (Streak + Cash Out) ----------------
+const HL = { deck:[], current:null, bet:0, inRound:false, streak:0, multiplier:1 };
 const hlArea = document.getElementById('hl-area');
-const hlLog = document.getElementById('hl-log');
-function hlRender(){
-  hlArea.textContent = "Current: " + (HL.current?cardToStr(HL.current):'--') + "\nNext unknown...";
-}
-function hlLogMsg(m){ hlLog.textContent = m; document.getElementById('hl-status').textContent = ''; }
+const hlMsg = document.getElementById('hl-msg');
+
 function hlStart(){
-  const betInput = Number(document.getElementById('hl-bet').value)||0;
-  if (betInput<=0){ hlLogMsg('Enter a positive bet'); return; }
-  if (betInput>money){ hlLogMsg('Not enough money'); return; }
-  setMoney(money - betInput);
-  HL.bet = betInput;
+  const bet = Math.max(0, Math.floor(Number(document.getElementById('hl-bet').value)||0));
+  if (bet<=0){ hlMsg.textContent='Enter a positive bet'; return; }
+  if (bet>money){ hlMsg.textContent='Not enough money'; return; }
+  moneySet(money - bet);
+  HL.bet = bet;
   HL.deck = newDeck(1);
   HL.current = HL.deck.pop();
   HL.inRound = true;
+  HL.streak = 0; HL.multiplier = 1;
   document.getElementById('hl-higher').disabled=false;
   document.getElementById('hl-lower').disabled=false;
+  document.getElementById('hl-cash').disabled=false;
   hlRender();
-  hlLogMsg('Guess higher or lower than ' + cardToStr(HL.current));
+  hlMsg.textContent = `Current ${cardStr(HL.current)} — guess higher or lower.`;
 }
-function hlGuess(higher){
+function hlRender(){
+  hlArea.textContent = `Current: ${cardStr(HL.current)}\nStreak: ${HL.streak}  Multiplier: x${HL.multiplier.toFixed(2)}\nDeck left: ${HL.deck.length}`;
+}
+function hlGuess(isHigher){
   if (!HL.inRound) return;
-  if (HL.deck.length===0){ hlLogMsg('No cards left'); return; }
+  if (HL.deck.length===0){ hlMsg.textContent='No cards left'; return; }
   const next = HL.deck.pop();
-  hlArea.textContent = "Current: " + cardToStr(HL.current) + "\nNext: " + cardToStr(next);
   const curV = RANKS.indexOf(HL.current.rank);
   const nextV = RANKS.indexOf(next.rank);
-  let correct=false;
-  if (nextV > curV && higher) correct=true;
-  if (nextV < curV && !higher) correct=true;
-  if (nextV===curV) correct=false; // tie = lose
+  let correct = false;
+  if (nextV > curV && isHigher) correct = true;
+  if (nextV < curV && !isHigher) correct = true;
+  // tie = lose
+  HL.current = next;
   if (correct){
-    // award: double bet and allow continuing (player may press higher/lower again)
-    setMoney(money + HL.bet*2);
-    HL.current = next;
-    HL.inRound = true; // can continue
+    HL.streak++;
+    HL.multiplier *= 1.5; // increase multiplier
+    // allow continue
     hlRender();
-    hlLogMsg('Correct! You won $' + HL.bet + ' (wager returned + payout). Press higher/lower to play on or start new round.');
-    // In this simple version we don't force ending the round; betting again if desired.
-    // To avoid infinite gains, we set bet to same and allow more plays. We'll require the player to start new round to reset bet.
+    hlMsg.textContent = `Correct! New streak ${HL.streak}. Multiplier x${HL.multiplier.toFixed(2)} — Cash Out or continue.`;
   } else {
+    // lose entire bet
     HL.inRound=false;
     document.getElementById('hl-higher').disabled=true;
     document.getElementById('hl-lower').disabled=true;
-    hlLogMsg('Wrong or tie. Lost $' + HL.bet);
-    HL.bet=0;
+    document.getElementById('hl-cash').disabled=true;
+    hlRender();
+    hlMsg.textContent = `Wrong (or tie). You lost $${HL.bet}.`;
+    HL.bet = 0;
   }
 }
-document.getElementById('hl-bet-btn').onclick = hlStart;
+function hlCash(){
+  if (!HL.inRound) return;
+  // payout = bet * multiplier
+  const payout = Math.floor(HL.bet * HL.multiplier);
+  moneySet(money + payout);
+  hlMsg.textContent = `Cashed out! You received $${payout}.`;
+  HL.inRound=false;
+  document.getElementById('hl-higher').disabled=true;
+  document.getElementById('hl-lower').disabled=true;
+  document.getElementById('hl-cash').disabled=true;
+  HL.bet = 0;
+}
+document.getElementById('hl-start').onclick = hlStart;
 document.getElementById('hl-higher').onclick = ()=>hlGuess(true);
 document.getElementById('hl-lower').onclick = ()=>hlGuess(false);
+document.getElementById('hl-cash').onclick = hlCash;
 
-// Initialize displays
-bjRender(); solRender(); gfRender(); hlRender();
+// ---------------- small UI housekeeping ----------------
+function updateMoneyColor(){
+  const el = document.getElementById('moneyVal');
+  el.style.color = money <= 0 ? '#ff7b7b' : 'var(--accent)';
+}
+setInterval(updateMoneyColor,400);
 
-// Small UX: show current money warnings
-setInterval(()=> {
-  if (money <= 0) document.getElementById('moneyVal').style.color = '#ff6b6b';
-  else document.getElementById('moneyVal').style.color = 'var(--accent)';
-}, 500);
+// Initial render small placeholders
+bjRender(); pyRender(); gfRender(); hlRender();
 </script>
 </body>
 </html>
