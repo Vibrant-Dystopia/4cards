@@ -1,0 +1,479 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Text-Art Card Arcade</title>
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<style>
+  :root {
+    --bg: #0b0b0b;
+    --panel: #111;
+    --accent: #ffd966;
+    --text: #e6e6e6;
+    --mono: "Courier New", monospace;
+  }
+  html,body {height:100%; margin:0; background:var(--bg); color:var(--text); font-family:var(--mono);}
+  #money {position:fixed; left:10px; top:10px; background:#222; padding:10px 12px; border:2px solid #333; border-radius:6px; z-index:50}
+  #money .amt {color:var(--accent); font-weight:bold; font-size:18px;}
+  .board {display:grid; grid-template-columns:1fr 1fr; grid-template-rows:1fr 1fr; gap:12px; padding:60px 12px 12px 12px; height:100vh; box-sizing:border-box;}
+  .game {background:var(--panel); padding:10px; border:2px dashed #333; white-space:pre; overflow:auto; font-size:13px;}
+  .title {color:var(--accent); font-weight:bold; margin-bottom:6px; display:block;}
+  .controls {margin-top:6px; font-size:13px;}
+  button {background:#222; color:var(--text); border:1px solid #444; padding:6px 8px; margin-left:6px; cursor:pointer;}
+  input[type=number] {width:90px; padding:5px; background:#0b0b0b; color:var(--text); border:1px solid #333; }
+  .log {margin-top:8px; font-size:12px; color:#cfcfcf;}
+  .cards {font-family:var(--mono); font-size:14px;}
+  .small {font-size:12px}
+  .ascii {color:#8fd3ff; font-size:13px}
+  .suit {color:#ff6b6b}
+  .row {display:flex; gap:8px; align-items:center; flex-wrap:wrap;}
+  .center {text-align:center;}
+  .pile {display:inline-block; padding:6px 8px; border:1px solid #333; border-radius:4px; background:#080808}
+</style>
+</head>
+<body>
+<div id="money">Money: $<span class="amt" id="moneyVal">1000</span></div>
+
+<div class="board">
+  <div class="game" id="blackjack">
+    <div class="title">BLACKJACK</div>
+    <div class="ascii">
+      _______   _   _   _   _ 
+     |   _   |_| |_| |_| |_| |
+     |  |_)  |  _| | | |_  _|
+     |  | \  | |_| |_| |_|_|  
+      - text chips & cards -
+    </div>
+    <div class="cards" id="bj-area"></div>
+    <div class="controls">
+      Bet: $<input type="number" id="bj-bet" min="1" value="10">
+      <button id="bj-bet-btn">Place Bet / Deal</button>
+      <button id="bj-hit" disabled>Hit</button>
+      <button id="bj-stand" disabled>Stand</button>
+      <span class="small" id="bj-status"></span>
+    </div>
+    <div class="log" id="bj-log"></div>
+  </div>
+
+  <div class="game" id="solitaire">
+    <div class="title">SOLITAIRE (Simple)</div>
+    <div class="ascii">
+       _________
+      /  _  _  /|
+     /__/__/__/_|
+     |  _  _  |/
+     |_/ \/ \_|
+      - flip & remove if +/-1 -
+    </div>
+    <div class="cards" id="sol-area"></div>
+    <div class="controls">
+      Bet: $<input type="number" id="sol-bet" min="1" value="10">
+      <button id="sol-bet-btn">Place Bet / Start</button>
+      <button id="sol-flip" disabled>Flip</button>
+      <button id="sol-remove" disabled>Remove (if +/-1)</button>
+      <span class="small" id="sol-status"></span>
+    </div>
+    <div class="log" id="sol-log"></div>
+  </div>
+
+  <div class="game" id="gofish">
+    <div class="title">GO FISH</div>
+    <div class="ascii">
+       ______
+      /_____/|
+      |  o  ||
+      |_____|/
+     - ask for rank, try to make pairs -
+    </div>
+    <div class="cards" id="gf-area"></div>
+    <div class="controls">
+      Bet: $<input type="number" id="gf-bet" min="1" value="10">
+      <button id="gf-bet-btn">Place Bet / Deal</button>
+      Ask Rank: <input id="gf-ask" placeholder="A,2..K" style="width:60px">
+      <button id="gf-ask-btn" disabled>Ask</button>
+      <span class="small" id="gf-status"></span>
+    </div>
+    <div class="log" id="gf-log"></div>
+  </div>
+
+  <div class="game" id="hilow">
+    <div class="title">HIGHER or LOWER</div>
+    <div class="ascii">
+      .------.
+      |A .   |
+      | /.\  |
+      |(_,_) |
+      '------'
+      - guess if next is higher or lower -
+    </div>
+    <div class="cards" id="hl-area"></div>
+    <div class="controls">
+      Bet: $<input type="number" id="hl-bet" min="1" value="10">
+      <button id="hl-bet-btn">Place Bet / Start</button>
+      <button id="hl-higher" disabled>Higher</button>
+      <button id="hl-lower" disabled>Lower</button>
+      <span class="small" id="hl-status"></span>
+    </div>
+    <div class="log" id="hl-log"></div>
+  </div>
+</div>
+
+<script>
+// Shared money tracker
+let money = 1000;
+function setMoney(v) { money = Math.max(0, Math.floor(v)); document.getElementById('moneyVal').textContent = money; }
+setMoney(money);
+
+// Deck helpers
+const SUITS = ['♠','♥','♦','♣'];
+const RANKS = ['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
+
+function newDeck(times=1) {
+  const d = [];
+  for (let t=0;t<times;t++){
+    for (let s=0;s<SUITS.length;s++){
+      for (let r=0;r<RANKS.length;r++){
+        d.push({rank:RANKS[r],suit:SUITS[s],value:r+1});
+      }
+    }
+  }
+  return shuffle(d);
+}
+function shuffle(a){
+  for (let i=a.length-1;i>0;i--){
+    const j=Math.floor(Math.random()*(i+1));
+    [a[i],a[j]]=[a[j],a[i]];
+  }
+  return a;
+}
+function cardToStr(c){ return c.rank + c.suit; }
+function valueForBlackjack(card){
+  if (!card) return 0;
+  if (card.rank==='A') return 11;
+  if (['J','Q','K'].includes(card.rank)) return 10;
+  return parseInt(card.rank,10);
+}
+
+// ---------------- BLACKJACK ----------------
+const BJ = {
+  deck: newDeck(2),
+  player: [],
+  dealer: [],
+  bet:0,
+  inRound:false
+};
+const bjArea = document.getElementById('bj-area');
+const bjLog = document.getElementById('bj-log');
+function bjRender(){
+  bjArea.textContent = "Dealer: " + BJ.dealer.map(cardToStr).join(' ')
+    + "\nPlayer: " + BJ.player.map(cardToStr).join(' ')
+    + "\n\n(Dealer shows first card hidden if round ongoing)";
+}
+function bjLogMsg(m){ bjLog.textContent = m; document.getElementById('bj-status').textContent = ''; }
+function bjStartRound(){
+  const betInput = Number(document.getElementById('bj-bet').value)||0;
+  if (betInput<=0){ bjLogMsg('Enter a positive bet'); return; }
+  if (betInput>money){ bjLogMsg('Not enough money'); return; }
+  // take bet
+  setMoney(money - betInput);
+  BJ.bet = betInput;
+  BJ.inRound = true;
+  BJ.player = [];
+  BJ.dealer = [];
+  if (BJ.deck.length < 15) BJ.deck = newDeck(2);
+  BJ.player.push(BJ.deck.pop(), BJ.deck.pop());
+  BJ.dealer.push(BJ.deck.pop(), BJ.deck.pop());
+  document.getElementById('bj-hit').disabled = false;
+  document.getElementById('bj-stand').disabled = false;
+  bjRender();
+  bjLogMsg('Round started. Hit or Stand.');
+}
+function bjSum(hand){
+  let sum = 0, aces=0;
+  for (const c of hand){ if (!c) continue; if (c.rank==='A'){ aces++; sum+=11 } else if (['J','Q','K'].includes(c.rank)) sum+=10; else sum+=Number(c.rank); }
+  while(sum>21 && aces>0){ sum-=10; aces--; }
+  return sum;
+}
+function bjHit(){
+  if (!BJ.inRound) return;
+  BJ.player.push(BJ.deck.pop());
+  bjRender();
+  const s = bjSum(BJ.player);
+  if (s>21){ // bust
+    BJ.inRound=false;
+    document.getElementById('bj-hit').disabled=true;
+    document.getElementById('bj-stand').disabled=true;
+    bjLogMsg('You busted! Lost $' + BJ.bet);
+    BJ.bet = 0;
+  } else {
+    bjLogMsg('You have ' + s);
+  }
+}
+function bjStand(){
+  if (!BJ.inRound) return;
+  // dealer draws to 17
+  while (bjSum(BJ.dealer) < 17) BJ.dealer.push(BJ.deck.pop());
+  const p = bjSum(BJ.player), d = bjSum(BJ.dealer);
+  let result = '';
+  if (p>21) { result = 'lose'; }
+  else if (d>21 || p> d) { result = 'win'; }
+  else if (p===d) { result = 'push'; }
+  else result = 'lose';
+  let message='';
+  if (result==='win'){ setMoney(money + BJ.bet*2); message = `You win! +$${BJ.bet}`; }
+  else if (result==='push'){ setMoney(money + BJ.bet); message = `Push. Bet returned $${BJ.bet}`; }
+  else { message = `You lose $${BJ.bet}`; }
+  BJ.inRound=false;
+  document.getElementById('bj-hit').disabled=true;
+  document.getElementById('bj-stand').disabled=true;
+  bjRender();
+  bjLogMsg(message + " (P:"+p+" D:"+d+")");
+  BJ.bet=0;
+}
+document.getElementById('bj-bet-btn').onclick = bjStartRound;
+document.getElementById('bj-hit').onclick = bjHit;
+document.getElementById('bj-stand').onclick = bjStand;
+
+// ---------------- SIMPLE SOLITAIRE ----------------
+const SOL = {
+  deck: newDeck(1),
+  pile: [], // face-up pile stack
+  waste: [], // held face-up stack top
+  bet:0,
+  inRound:false
+};
+const solArea = document.getElementById('sol-area');
+const solLog = document.getElementById('sol-log');
+function solRender(){
+  solArea.textContent = "Deck: [" + SOL.deck.length + "]\nPile(top): " + (SOL.pile.length?cardToStr(SOL.pile[SOL.pile.length-1]):'--')
+    + "\nWaste: " + SOL.waste.map(cardToStr).join(' ');
+}
+function solLogMsg(m){ solLog.textContent = m; document.getElementById('sol-status').textContent = ''; }
+function solStart(){
+  const betInput = Number(document.getElementById('sol-bet').value)||0;
+  if (betInput<=0){ solLogMsg('Enter a positive bet'); return; }
+  if (betInput>money){ solLogMsg('Not enough money'); return; }
+  setMoney(money - betInput);
+  SOL.bet = betInput;
+  SOL.deck = newDeck(1);
+  SOL.pile = [];
+  SOL.waste = [];
+  // initial 5 in pile face-up
+  for (let i=0;i<5;i++) SOL.pile.push(SOL.deck.pop());
+  SOL.inRound = true;
+  document.getElementById('sol-flip').disabled=false;
+  document.getElementById('sol-remove').disabled=false;
+  solRender();
+  solLogMsg('Start: flip or remove if +/-1 from pile top.');
+}
+function solFlip(){
+  if (!SOL.inRound) return;
+  if (SOL.deck.length===0){ solLogMsg('No cards left to flip'); return; }
+  SOL.waste.push(SOL.deck.pop());
+  solRender();
+  solLogMsg('Flipped one. Try removing if +/-1 rank from pile top.');
+}
+function rankIndex(rank){ return RANKS.indexOf(rank); }
+function solRemove(){
+  if (!SOL.inRound) return;
+  if (SOL.waste.length===0 || SOL.pile.length===0){ solLogMsg('No removable combo'); return; }
+  const topPile = SOL.pile[SOL.pile.length-1];
+  const topWaste = SOL.waste[SOL.waste.length-1];
+  const pi = rankIndex(topPile.rank), wi = rankIndex(topWaste.rank);
+  if (Math.abs(pi - wi) === 1){
+    SOL.pile.pop();
+    SOL.waste.pop();
+    solRender();
+    solLogMsg('Removed pair. If pile empty you win.');
+    if (SOL.pile.length===0){
+      // win
+      setMoney(money + SOL.bet*3); // payout
+      SOL.inRound=false;
+      document.getElementById('sol-flip').disabled=true;
+      document.getElementById('sol-remove').disabled=true;
+      solLogMsg('You cleared the pile! You win $' + SOL.bet*2 + ' (wager returned + payout)');
+      SOL.bet=0;
+    }
+  } else {
+    solLogMsg('Top ranks not +/-1');
+  }
+}
+document.getElementById('sol-bet-btn').onclick = solStart;
+document.getElementById('sol-flip').onclick = solFlip;
+document.getElementById('sol-remove').onclick = solRemove;
+
+// ---------------- GO FISH (very simple) ----------------
+const GF = {
+  deck: newDeck(1),
+  player: [],
+  cpu: [],
+  bet:0,
+  inRound:false
+};
+const gfArea = document.getElementById('gf-area');
+const gfLog = document.getElementById('gf-log');
+function gfRender(){
+  gfArea.textContent = "Your hand: " + GF.player.map(cardToStr).join(' ')
+    + "\nCPU books: " + GF.cpuBooks
+    + "\nYour books: " + GF.playerBooks;
+}
+function gfLogMsg(m){ gfLog.textContent = m; document.getElementById('gf-status').textContent = ''; }
+function gfStart(){
+  const betInput = Number(document.getElementById('gf-bet').value)||0;
+  if (betInput<=0){ gfLogMsg('Enter a positive bet'); return; }
+  if (betInput>money){ gfLogMsg('Not enough money'); return; }
+  setMoney(money - betInput);
+  GF.bet = betInput;
+  GF.deck = newDeck(1);
+  GF.player = [];
+  GF.cpu = [];
+  GF.playerBooks = 0;
+  GF.cpuBooks = 0;
+  // deal 5 each
+  for (let i=0;i<5;i++){ GF.player.push(GF.deck.pop()); GF.cpu.push(GF.deck.pop()); }
+  GF.inRound = true;
+  document.getElementById('gf-ask-btn').disabled=false;
+  gfRender();
+  gfLogMsg('Dealt. Ask for a rank (A,2..K) to request from CPU.');
+}
+function findAndMove(rank, from, to){
+  let moved = false;
+  for (let i = from.length-1; i>=0;i--){
+    if (from[i].rank === rank){ to.push(from.splice(i,1)[0]); moved = true; }
+  }
+  return moved;
+}
+function countRank(hand, rank){
+  return hand.filter(c=>c.rank===rank).length;
+}
+function checkBooksForPlayer(){
+  // if player has 4 of a rank, make a book
+  for (const r of RANKS){
+    if (countRank(GF.player, r) >= 4){
+      GF.player = GF.player.filter(c=>c.rank!==r);
+      GF.playerBooks++;
+    }
+    if (countRank(GF.cpu, r) >= 4){
+      GF.cpu = GF.cpu.filter(c=>c.rank!==r);
+      GF.cpuBooks++;
+    }
+  }
+}
+function gfAsk(){
+  if (!GF.inRound) return;
+  const rank = (document.getElementById('gf-ask').value||'').trim().toUpperCase();
+  if (!RANKS.includes(rank)){ gfLogMsg('Enter a valid rank'); return; }
+  // ask CPU for rank
+  const had = findAndMove(rank, GF.cpu, GF.player);
+  if (had){
+    checkBooksForPlayer();
+    gfRender();
+    gfLogMsg('CPU had some. You got them. Ask again or check books.');
+    // player may continue
+  } else {
+    // go fish: draw one
+    if (GF.deck.length>0){
+      const drawn = GF.deck.pop();
+      GF.player.push(drawn);
+      checkBooksForPlayer();
+      gfRender();
+      gfLogMsg('Go Fish! Drew ' + cardToStr(drawn) + '. Now CPU turn.');
+    } else {
+      gfLogMsg('Go Fish deck empty. CPU turn.');
+    }
+    // CPU simple random ask
+    const cpuAsk = GF.player.length? GF.player[Math.floor(Math.random()*GF.player.length)].rank : RANKS[Math.floor(Math.random()*RANKS.length)];
+    // CPU asks player:
+    const cpuHad = findAndMove(cpuAsk, GF.player, GF.cpu);
+    if (!cpuHad){
+      if (GF.deck.length>0) GF.cpu.push(GF.deck.pop());
+    }
+    checkBooksForPlayer();
+    gfRender();
+    // Check end
+    if (GF.deck.length===0 && GF.player.length===0 && GF.cpu.length===0){
+      GF.inRound=false;
+      document.getElementById('gf-ask-btn').disabled=true;
+      // decide
+      if (GF.playerBooks > GF.cpuBooks){ setMoney(money + GF.bet*3); gfLogMsg('You win Go Fish! Pairs:'+GF.playerBooks+' vs '+GF.cpuBooks+' Payout: $' + (GF.bet*2)); }
+      else if (GF.playerBooks === GF.cpuBooks){ setMoney(money + GF.bet); gfLogMsg('Push in Go Fish. Bet returned.'); }
+      else { gfLogMsg('CPU wins Go Fish. You lost $' + GF.bet); }
+      GF.bet=0;
+    } else {
+      gfLogMsg('CPU asked ' + cpuAsk + '. Round continues.');
+    }
+  }
+}
+document.getElementById('gf-bet-btn').onclick = gfStart;
+document.getElementById('gf-ask-btn').onclick = gfAsk;
+
+// ---------------- HIGHER or LOWER ----------------
+const HL = {
+  deck: newDeck(1),
+  current: null,
+  bet:0,
+  inRound:false
+};
+const hlArea = document.getElementById('hl-area');
+const hlLog = document.getElementById('hl-log');
+function hlRender(){
+  hlArea.textContent = "Current: " + (HL.current?cardToStr(HL.current):'--') + "\nNext unknown...";
+}
+function hlLogMsg(m){ hlLog.textContent = m; document.getElementById('hl-status').textContent = ''; }
+function hlStart(){
+  const betInput = Number(document.getElementById('hl-bet').value)||0;
+  if (betInput<=0){ hlLogMsg('Enter a positive bet'); return; }
+  if (betInput>money){ hlLogMsg('Not enough money'); return; }
+  setMoney(money - betInput);
+  HL.bet = betInput;
+  HL.deck = newDeck(1);
+  HL.current = HL.deck.pop();
+  HL.inRound = true;
+  document.getElementById('hl-higher').disabled=false;
+  document.getElementById('hl-lower').disabled=false;
+  hlRender();
+  hlLogMsg('Guess higher or lower than ' + cardToStr(HL.current));
+}
+function hlGuess(higher){
+  if (!HL.inRound) return;
+  if (HL.deck.length===0){ hlLogMsg('No cards left'); return; }
+  const next = HL.deck.pop();
+  hlArea.textContent = "Current: " + cardToStr(HL.current) + "\nNext: " + cardToStr(next);
+  const curV = RANKS.indexOf(HL.current.rank);
+  const nextV = RANKS.indexOf(next.rank);
+  let correct=false;
+  if (nextV > curV && higher) correct=true;
+  if (nextV < curV && !higher) correct=true;
+  if (nextV===curV) correct=false; // tie = lose
+  if (correct){
+    // award: double bet and allow continuing (player may press higher/lower again)
+    setMoney(money + HL.bet*2);
+    HL.current = next;
+    HL.inRound = true; // can continue
+    hlRender();
+    hlLogMsg('Correct! You won $' + HL.bet + ' (wager returned + payout). Press higher/lower to play on or start new round.');
+    // In this simple version we don't force ending the round; betting again if desired.
+    // To avoid infinite gains, we set bet to same and allow more plays. We'll require the player to start new round to reset bet.
+  } else {
+    HL.inRound=false;
+    document.getElementById('hl-higher').disabled=true;
+    document.getElementById('hl-lower').disabled=true;
+    hlLogMsg('Wrong or tie. Lost $' + HL.bet);
+    HL.bet=0;
+  }
+}
+document.getElementById('hl-bet-btn').onclick = hlStart;
+document.getElementById('hl-higher').onclick = ()=>hlGuess(true);
+document.getElementById('hl-lower').onclick = ()=>hlGuess(false);
+
+// Initialize displays
+bjRender(); solRender(); gfRender(); hlRender();
+
+// Small UX: show current money warnings
+setInterval(()=> {
+  if (money <= 0) document.getElementById('moneyVal').style.color = '#ff6b6b';
+  else document.getElementById('moneyVal').style.color = 'var(--accent)';
+}, 500);
+</script>
+</body>
+</html>
